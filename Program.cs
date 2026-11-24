@@ -7,7 +7,8 @@
 //   dotnet run -- --send            send every GUID in ids.txt (asks for YES first)
 //   dotnet run -- --send --only <guid>
 //
-// Config (environment variable wins, then dotnet user-secrets): NOTIFY_URL, SIGNING_KEY, APP_ID.
+// Config: appsettings.json in the current folder (git-ignored), keys NOTIFY_URL, SIGNING_KEY, APP_ID.
+// An environment variable with the same name overrides the file.
 
 using System.Globalization;
 using System.Net.Http.Headers;
@@ -15,7 +16,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-const string UserSecretsId = "notify-replay"; // must match <UserSecretsId> in NotifyReplay.csproj
+const string ConfigFile = "appsettings.json"; // git-ignored, copy from appsettings.example.json
 const string IdsFile = "ids.txt";
 const string ResultsFile = "results.csv";
 var delay = TimeSpan.FromSeconds(3);
@@ -42,11 +43,11 @@ for (int i = 0; i < args.Length; i++)
 }
 
 // ---------- Configuration ----------
-var secrets = LoadUserSecrets(UserSecretsId);
+var config = LoadConfig(ConfigFile);
 string? Setting(string name)
 {
     var value = Environment.GetEnvironmentVariable(name);
-    if (string.IsNullOrWhiteSpace(value)) secrets.TryGetValue(name, out value);
+    if (string.IsNullOrWhiteSpace(value)) config.TryGetValue(name, out value);
     return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
@@ -56,7 +57,7 @@ var appId = Setting("APP_ID");
 
 if (notifyUrl is null || !Uri.TryCreate(notifyUrl, UriKind.Absolute, out _))
 {
-    Console.Error.WriteLine("NOTIFY_URL is missing or not a valid absolute URL.");
+    Console.Error.WriteLine($"NOTIFY_URL is missing or not a valid absolute URL. Copy appsettings.example.json to {ConfigFile} in {Directory.GetCurrentDirectory()} and fill it in.");
     return 2;
 }
 if (send && (signingKey is null || appId is null))
@@ -233,13 +234,9 @@ static string CreateJwt(string applicationId, string key, DateTimeOffset now, Ti
 static string Base64Url(byte[] bytes) =>
     Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
-// Reads the flat secrets.json that "dotnet user-secrets set" writes. No package needed.
-static Dictionary<string, string?> LoadUserSecrets(string id)
+// Reads a flat JSON file: { "NOTIFY_URL": "...", "SIGNING_KEY": "...", "APP_ID": "..." }
+static Dictionary<string, string?> LoadConfig(string path)
 {
-    var root = OperatingSystem.IsWindows()
-        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Microsoft", "UserSecrets")
-        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".microsoft", "usersecrets");
-    var path = Path.Combine(root, id, "secrets.json");
     if (!File.Exists(path)) return new();
     using var doc = JsonDocument.Parse(File.ReadAllText(path));
     return doc.RootElement.EnumerateObject()

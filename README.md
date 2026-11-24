@@ -14,13 +14,17 @@ It has a single `Program.cs` and no NuGet packages. The JWT is built with plain 
 
 ## Configuration
 
-Set `NOTIFY_URL`, `SIGNING_KEY` and `APP_ID` as environment variables or with dotnet user-secrets (environment variables win):
+Copy `appsettings.example.json` to `appsettings.json` and fill in the three values:
 
+```json
+{
+  "NOTIFY_URL": "https://your-api/api/Notify",
+  "SIGNING_KEY": "<signing key>",
+  "APP_ID": "<app id>"
+}
 ```
-dotnet user-secrets set NOTIFY_URL "https://your-api/api/Notify"
-dotnet user-secrets set APP_ID "<app id>"
-dotnet user-secrets set SIGNING_KEY "<signing key>"
-```
+
+`appsettings.json` is git-ignored, so the key never gets committed. Run the app from the folder that holds it. An environment variable with the same name overrides the file.
 
 The signing key is used as UTF-8 bytes. Secret values and the token are never printed.
 
@@ -42,6 +46,6 @@ Copy `ids.example.txt` to `ids.txt` and list one GUID per line. Blank lines and 
 - The run stops on the first non-2xx response, prints the status and body, and exits with code 1. It never retries, because the API may have no duplicate protection.
 - Every attempt is appended to `results.csv` (`guid,utc_timestamp,status_code`). GUIDs already recorded as 2xx are skipped, so re-running is safe.
 - A network error or timeout is recorded as `ERROR` and stops the run. The request may still have reached the API, so check before re-sending that GUID.
-- `ids.txt` and `results.csv` are git-ignored.
+- `appsettings.json`, `ids.txt` and `results.csv` are git-ignored.
 
 Exit codes: `0` OK, `1` failure or cancelled, `2` bad arguments or configuration.

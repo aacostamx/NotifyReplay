@@ -12,8 +12,10 @@ obj/
 ids.txt
 results.csv
 
-# Secrets - never commit (user-secrets live outside the repo, these are just in case)
+# Secrets - never commit. Only the example file is tracked.
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
 secrets.json
 .env
 *.env
-appsettings.*.json
