@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+
+# Input and output data - never commit
+ids.txt
+results.csv
+
+# Secrets - never commit (user-secrets live outside the repo, these are just in case)
+secrets.json
+.env
+*.env
+appsettings.*.json
